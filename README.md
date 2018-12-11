@@ -1,5 +1,5 @@
-# Rifle Arduino
-Pins:
+## Rifle Arduino
+##### Pins:
 - 2 -- Receiever
 - 3 -- (transistor) IR LED
 - 9 -- Button
