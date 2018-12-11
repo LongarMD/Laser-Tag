@@ -29,9 +29,7 @@ uint8_t codeProtocol;  // The type of code
 uint32_t codeValue;    // The data bits if type is not raw
 uint8_t codeBits;      // The length of the code in bits
 
-//These flags keep track of whether we received the first code 
-//and if we have have received a new different code from a previous one.
-bool gotOne, gotNew;
+bool gotOne, gotNew;   // Have we received the first code? Have we have received a new different code from a previous one?
 // -----
 
 // Shooting
