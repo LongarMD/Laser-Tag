@@ -6,10 +6,10 @@
 - 10, 11, 12, 13 -- Life count LEDs
 
 ## To do
-- [ ] Reloading
-- [ ] Weapon variations
-  - [ ] Shooting speed
-  - [ ] Shooting type
-  - [ ] Magazine size
-- [ ] Shooting feedback
-- [ ] Getting shot feedback
+- [ ] Feedback
+- [ ] Game modes
+
+## Bugs
+- [ ] Shooting bug
+
+https://drive.google.com/open?id=1pUc04ME9qa3ApeVfhV7hOGknkZ3N8VbSYxqkJi5cyAs
