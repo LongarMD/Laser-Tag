@@ -183,6 +183,9 @@ void RefreshLEDS(){
 
 void ResetGame(){
   usedLives = 0;
+  
+  CurrentWeapon.ammoCount = CurrentWeapon.magazineSize;
+  
   for (int i = 0; i < MAX_LIVES; i++ ) {
     ledStatus[i] = 1;
   }
