@@ -5,8 +5,9 @@
 //2 -- Receiever
 //3 -- (transistor) IR LED
 //8 -- Reload (button)
-//9 -- Trigger (button)
-//10, 11, 12, 13 -- Life LEDs
+//9 -- Trigger (button) 
+// 4, 5, 6, 7, 10 -- OLED
+//4A, 5A, 6A, 7A -- Life LEDs
 
 #include <IRLibDecodeBase.h>
 #include <IRLibSendBase.h> 
@@ -17,7 +18,7 @@
 
 // Gameplay
 // Constants
-#define HIT_CODE 0x10c8e11e // 281600286(dec)
+#define HIT_CODE 0x811C9DC5 // 2166136261
 #define RESET_CODE 0x10C851AE
 
 #define MAX_LIVES 4
@@ -62,7 +63,7 @@ bool triggerDown;
 // -----
 
 // Life counting
-int ledsGPIO[] = { 10 , 11 , 12, 13};
+int ledsGPIO[] = {A4,A5,A6,A7};
 bool ledStatus[] = { 1, 1, 1, 1};
 volatile int usedLives = 0;
 // -----
@@ -90,7 +91,7 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(2), ISR_ReceiveSignal, CHANGE);
 
   //Gameplay
-  CurrentWeapon = AutoRifle;
+  CurrentWeapon = Pistol;
   // -----
   
   Serial.begin(9600);
@@ -141,7 +142,7 @@ void storeCode(void) {
 
 void Shoot(){
   if(CurrentWeapon.ammoCount > 0){
-    mySender.send(NEC, HIT_CODE, 0);
+    mySender.send(SONY, HIT_CODE, 0);
     Serial.println(F("Sent signal."));
     if(CurrentWeapon.ammoCount == 1) { Serial.println("Out of ammo"); }
     CurrentWeapon.ammoCount--;
@@ -166,18 +167,18 @@ void CheckHit(){
    if (codeValue == HIT_CODE && usedLives < MAX_LIVES) {
     ledStatus[usedLives] = 0;
     usedLives++;
-
     RefreshLEDS();
   }
   
   else if(codeValue == RESET_CODE){
     ResetGame(); 
   }
+  Serial.println(codeValue);
 }
 
 void RefreshLEDS(){
   for (int i = 0; i < MAX_LIVES; i++ ) {
-    digitalWrite(ledsGPIO[i], ledStatus[i]);
+    analogWrite(ledsGPIO[i], ledStatus[i]);
   }  
 }
 
@@ -199,7 +200,6 @@ void ISR_ReceiveSignal()
     myDecoder.decode();
     storeCode();
     CheckHit();
-    
     myReceiver.enableIRIn(); // Re-enable receiver
   }
 }
