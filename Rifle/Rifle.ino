@@ -1,14 +1,17 @@
-//TODO
-//Make weapons changable
+//PINS
+#define RECEIVER 2
+#define IR_LED 3
 
-//PINS:
-//2 -- Receiever
-//3 -- (transistor) IR LED
-//8 -- Reload (button)
-//9 -- Trigger (button) 
-// 4, 5, 6, 7, 10 -- OLED
-//4A, 5A, 6A, 7A -- Life LEDs
+#define OLED_CLK 6
+#define OLED_MOSI 7
+#define OLED_RESET 8
+#define OLED_DC 9
+#define OLED_CS 10
 
+#define RELOAD 11
+#define TRIGGER 12
+
+// IR libs
 #include <IRLibDecodeBase.h>
 #include <IRLibSendBase.h> 
 #include <IRLib_P01_NEC.h>
@@ -19,12 +22,6 @@
 
 // Display
 #include <Adafruit_SSD1306.h>
-
-#define OLED_CLK 4
-#define OLED_MOSI 5
-#define OLED_RESET 6
-#define OLED_DC 7
-#define OLED_CS 10
 
 #define SSD1306_128_64
 
@@ -106,7 +103,7 @@ Weapon CurrentWeapon;
 
 // IR sending and receiving objects
 #include <IRLibRecv.h>
-IRrecv myReceiver(2);
+IRrecv myReceiver(RECEIVER);
 IRdecode myDecoder;
 IRsend mySender;
 // -----
@@ -124,8 +121,6 @@ bool triggerDown;
 // -----
 
 // Life counting
-int ledsGPIO[] = {A4,A5,A6,A7};
-bool ledStatus[] = { 1, 1, 1, 1};
 volatile int usedLives = 0;
 // -----
 
@@ -136,15 +131,9 @@ void setup() {
   codeValue=0;
   // ------
 
-  // Life counting
-  for (int i = 0; i < MAX_LIVES; i++ ) {
-    pinMode(ledsGPIO[i], OUTPUT); // Define LED pins
-  }
-  // -----
-
   //Sender
-  pinMode(8, INPUT); // Define the reload button pin
-  pinMode(9, INPUT); // Define the trigger (button) pin
+  pinMode(RELOAD, INPUT); // Define the reload button pin
+  pinMode(TRIGGER, INPUT); // Define the trigger (button) pin
   triggerDown = false;
   // -----
 
@@ -174,7 +163,7 @@ void loop() {
   if(usedLives >= MAX_LIVES){
     GameOver();
   }
-  else if (digitalRead(8) == HIGH){
+  else if (digitalRead(RELOAD) == HIGH){
     CurrentWeapon.ammoCount = CurrentWeapon.magazineSize;
     Serial.println("Reloaded.");
   }
@@ -182,15 +171,15 @@ void loop() {
     // Shooting
     if(CurrentWeapon.fireRate != Weapon::AUTO){
       
-      if (digitalRead(9) == HIGH && triggerDown == false) {
+      if (digitalRead(TRIGGER) == HIGH && triggerDown == false) {
         for(int i = 0; i < CurrentWeapon.fireRate; i++){ Shoot(); }
         Serial.println();
         triggerDown = true;
       }
-      else if (digitalRead(9) == LOW && triggerDown == true) { triggerDown = false; }
+      else if (digitalRead(TRIGGER) == LOW && triggerDown == true) { triggerDown = false; }
     }
     
-    else if (digitalRead(9) == HIGH) { Shoot(); }
+    else if (digitalRead(TRIGGER) == HIGH) { Shoot(); }
 
     // Display
     display.clearDisplay();
@@ -235,9 +224,7 @@ void GameOver() {
 
 void CheckHit(){
    if (codeValue == HIT_CODE && usedLives < MAX_LIVES) {
-    ledStatus[usedLives] = 0;
     usedLives++;
-    RefreshLEDS();
   }
   
   else if(codeValue == RESET_CODE){
@@ -246,22 +233,10 @@ void CheckHit(){
   Serial.println(codeValue);
 }
 
-void RefreshLEDS(){
-  for (int i = 0; i < MAX_LIVES; i++ ) {
-    analogWrite(ledsGPIO[i], ledStatus[i]);
-  }  
-}
-
 void ResetGame(){
   usedLives = 0;
   
   CurrentWeapon.ammoCount = CurrentWeapon.magazineSize;
-  
-  for (int i = 0; i < MAX_LIVES; i++ ) {
-    ledStatus[i] = 1;
-  }
-  
-  RefreshLEDS();
 }
 
 void ISR_ReceiveSignal()
