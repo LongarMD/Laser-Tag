@@ -8,8 +8,8 @@
 #define OLED_DC 9
 #define OLED_CS 10
 
-#define RELOAD 11
-#define TRIGGER 12
+#define RELOAD 12
+#define TRIGGER 11
 
 // IR libs
 #include <IRLibDecodeBase.h>
@@ -71,12 +71,10 @@ static const int LINE_WIDTH = 4;
 
 Adafruit_SSD1306 display(128,64,OLED_MOSI, OLED_CLK, OLED_DC, OLED_RESET, OLED_CS);
 
-void draw_heart(int width, int height, int flag=1);
-
-void render_ammo(int ammo, int max_ammo, int bars = 20);
+void draw_screen(int health, int ammo, int max_ammo, int bars = 20);
 
 // Gameplay constants
-#define HIT_CODE 0x811C9DC5 // 2166136261
+#define HIT_CODE 0x64E1C9F6 // 2166136261
 #define RESET_CODE 0x10C851AE
 
 #define MAX_LIVES 4
@@ -154,18 +152,20 @@ void setup() {
   
   Serial.begin(9600);
   myReceiver.enableIRIn(); // Start the receiver
-  RefreshLEDS();
 
+  draw_screen(MAX_LIVES - usedLives, CurrentWeapon.ammoCount, CurrentWeapon.magazineSize);
 }
 
 void loop() {
+  bool render = false;
 
   if(usedLives >= MAX_LIVES){
     GameOver();
   }
   else if (digitalRead(RELOAD) == HIGH){
     CurrentWeapon.ammoCount = CurrentWeapon.magazineSize;
-    Serial.println("Reloaded.");
+    draw_screen(MAX_LIVES - usedLives, CurrentWeapon.ammoCount, CurrentWeapon.magazineSize);
+    //Serial.println("Reloaded.");
   }
   else{
     // Shooting
@@ -173,18 +173,13 @@ void loop() {
       
       if (digitalRead(TRIGGER) == HIGH && triggerDown == false) {
         for(int i = 0; i < CurrentWeapon.fireRate; i++){ Shoot(); }
-        Serial.println();
+        //Serial.println();
         triggerDown = true;
       }
       else if (digitalRead(TRIGGER) == LOW && triggerDown == true) { triggerDown = false; }
     }
     
     else if (digitalRead(TRIGGER) == HIGH) { Shoot(); }
-
-    // Display
-    display.clearDisplay();
-    render_ammo(CurrentWeapon.ammoCount, CurrentWeapon.magazineSize);
-    render_health(MAX_LIVES - usedLives);
   }
 }
 
@@ -207,12 +202,16 @@ void storeCode(void) {
 void Shoot(){
   if(CurrentWeapon.ammoCount > 0){
     mySender.send(SONY, HIT_CODE, 0);
-    Serial.println(F("Sent signal."));
-    if(CurrentWeapon.ammoCount == 1) { Serial.println("Out of ammo"); }
+    //Serial.println(F("Sent signal."));
+//    if(CurrentWeapon.ammoCount == 1) { Serial.println("Out of ammo");
+//    }
     CurrentWeapon.ammoCount--;
-    
-    delay(CurrentWeapon.fireDelay);
+
+    draw_screen(MAX_LIVES - usedLives, CurrentWeapon.ammoCount, CurrentWeapon.magazineSize);
+   // delay(CurrentWeapon.fireDelay);
   }
+ myReceiver.enableIRIn();  
+ 
 }
 
 void GameOver() {
@@ -220,11 +219,13 @@ void GameOver() {
 
   display.setCursor(0,0);
   display.print("Game Over");
+  display.display();
 }
 
 void CheckHit(){
    if (codeValue == HIT_CODE && usedLives < MAX_LIVES) {
     usedLives++;
+    draw_screen(MAX_LIVES - usedLives, CurrentWeapon.ammoCount, CurrentWeapon.magazineSize);
   }
   
   else if(codeValue == RESET_CODE){
@@ -254,7 +255,6 @@ void draw_heart(int x, int y, int flag=1) {
     x,
     y,
     heart_bmp, HEART_WIDTH, HEART_HEIGHT, flag);
-  display.display();
 }
 
 void draw_line(int x, int y, int flag=1) {
@@ -262,18 +262,21 @@ void draw_line(int x, int y, int flag=1) {
     x,
     y,
     line_bmp, LINE_WIDTH * 2, LINE_HEIGHT, flag);
-  display.display();
+
 }
 
-void render_health(int health){
+void draw_screen(int health, int ammo, int max_ammo, int bars = 20)
+{
+   display.clearDisplay();
+
+  // Health
     for(int i=0; i < health; i++){
-        int spacing = 0;
-        if(i > 0){spacing=4;}
-        draw_heart(HEALTH_X + (HEART_WIDTH + spacing) * i, HEALTH_Y);
-       }
-}
-
-void render_ammo(int ammo, int max_ammo, int bars = 20){
+      int spacing = 0;
+      if(i > 0){spacing=4;}
+      draw_heart(HEALTH_X + (HEART_WIDTH + spacing) * i, HEALTH_Y);
+     }
+     
+  // Ammo
     int ammo_bars = round((float(ammo) / float(max_ammo)) * float(bars));
 
     for(int i=0; i < ammo_bars; i++){
@@ -284,4 +287,6 @@ void render_ammo(int ammo, int max_ammo, int bars = 20){
 
     display.setCursor(50, 32 + LINE_HEIGHT + 2);
     display.print(ammo);
+
+    display.display();
 }
